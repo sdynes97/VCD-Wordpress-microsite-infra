@@ -1,0 +1,8 @@
+# Copy to backend.hcl (git-ignored) for local runs:
+#   terraform init -backend-config=environments/backend.hcl
+# Values are printed by bootstrap/Initialize-TerraformBootstrap.ps1.
+resource_group_name  = "rg-vcdwp-tfstate"
+storage_account_name = "stvcdwptfstateXXXXX"
+container_name       = "tfstate"
+key                  = "prod.terraform.tfstate"
+use_azuread_auth     = true

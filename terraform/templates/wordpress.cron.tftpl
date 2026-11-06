@@ -1,0 +1,13 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# WP-Cron (DISABLE_WP_CRON is set; run it locally instead of via loopback HTTP)
+%{ for key in site_keys ~}
+*/5 * * * * root cd /opt/wordpress && docker compose exec -T -u www-data -w /var/www/html ${key}-wp php wp-cron.php >/dev/null 2>&1
+%{ endfor ~}
+
+# Nightly DB dumps (before the 07:00 UTC Azure Backup snapshot)
+30 6 * * * root /opt/wordpress/bin/backup-db.sh >>/var/log/wordpress-backup.log 2>&1
+
+# Weekly container image refresh (PHP/Apache/MariaDB patch releases, cloudflared)
+15 5 * * 0 root cd /opt/wordpress && { docker compose pull -q && docker compose up -d --remove-orphans && docker image prune -f; } >>/var/log/wordpress-update.log 2>&1
