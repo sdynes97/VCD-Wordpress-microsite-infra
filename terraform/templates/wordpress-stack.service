@@ -1,0 +1,19 @@
+[Unit]
+Description=WordPress microsites (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/wordpress
+ExecStartPre=/opt/wordpress/bin/prepare-secrets.sh
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecReload=/opt/wordpress/bin/prepare-secrets.sh
+ExecReload=/usr/bin/docker compose up -d --remove-orphans --force-recreate cloudflared
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=1200
+
+[Install]
+WantedBy=multi-user.target

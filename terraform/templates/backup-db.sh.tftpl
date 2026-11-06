@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Nightly app-consistent DB dumps. They sit on the OS disk, so the daily
+# Azure Backup snapshot carries them too.
+set -euo pipefail
+umask 077
+
+BACKUP_DIR=/opt/wordpress/backups
+KEEP_DAYS=7
+install -d -m 0700 "$BACKUP_DIR"
+cd /opt/wordpress
+
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+for site in ${join(" ", site_keys)}; do
+  out="$BACKUP_DIR/$${site}-$stamp.sql.gz"
+  docker compose exec -T -e SITE="$site" "$${site}-db" sh -c \
+    'export MYSQL_PWD="$(cat "/run/secrets/$${SITE}_db_password")"; exec mariadb-dump --single-transaction --quick --routines -uwordpress wordpress' \
+    | gzip > "$out.tmp"
+  mv -f "$out.tmp" "$out"
+  echo "$(date -u +%FT%TZ) dumped $site -> $out"
+done
+
+find "$BACKUP_DIR" -name '*.sql.gz' -mtime +"$KEEP_DAYS" -delete
